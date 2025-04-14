@@ -1,0 +1,83 @@
+import torch.nn as nn
+from skorch import NeuralNetClassifier
+import torch
+import pandas as pd
+from sklearn.model_selection import GridSearchCV
+import numpy as np
+from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, roc_curve
+
+class FCNN(nn.Module):
+    def __init__(self, input_dim, hidden1, hidden2, num_classes):
+        super(FCNN, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden1),
+            nn.ReLU(),
+            nn.Linear(hidden1, hidden2),
+            nn.ReLU(),
+            nn.Linear(hidden2, num_classes)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+
+trainX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainX.pt')
+testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testX.pt')
+
+trainY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainY.csv')
+testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testY.csv')
+
+trainY = torch.tensor(trainY.iloc[:, 0].values)
+testY = torch.tensor(testY.iloc[:, 0].values)
+
+
+print(trainX.shape)
+print(testX.shape)
+print(trainY.shape)
+print(testY.shape)
+
+
+# Define default network
+net = NeuralNetClassifier(
+    module=FCNN,
+    module__input_dim=trainX.shape[1],
+    module__hidden1=256,
+    module__hidden2=128,
+    module__num_classes=len(torch.unique(trainY)),
+    max_epochs=10,
+    lr=0.001,
+    optimizer=torch.optim.Adam,
+    iterator_train__shuffle=True,
+)
+
+param_grid = {
+    'module__hidden1': [128, 256],
+    'module__hidden2': [64, 128],
+    'lr': [0.01, 0.001],
+}
+
+trainXNP = trainX.numpy()
+trainYNP = trainY.numpy()
+
+testXNP = testX.numpy()
+testYNP = testY.numpy()
+
+grid = GridSearchCV(net, param_grid, cv=5, scoring='accuracy', verbose=1)
+grid.fit(trainXNP, trainYNP)
+
+best_model = grid.best_estimator_
+best_params = grid.best_params_
+
+yHat = best_model.predict(testXNP)
+yScore = best_model.predict_proba(testXNP)[:, 1]
+
+print(f"ROC: {roc_curve(testYNP, yScore)}")
+
+print(f"AUC: {roc_auc_score(testYNP, yHat)}")
+
+print(f"AUPRC: {average_precision_score(testYNP, yHat)}")
+
+print(f"F1: {f1_score(testYNP, yHat)}")
+
+print(f"Best Params: {best_params}")
