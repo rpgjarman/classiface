@@ -13,13 +13,13 @@ import random
 
 
 
-trainX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainX.pt')
-testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testX.pt')
+trainX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_trainX.pt')
+testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_testX.pt')
 
-trainY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainY.csv')
-testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testY.csv')
+trainY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_trainY.csv')
+testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_testY.csv')
 
-param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ProjectAnalysis/HyperParamTuneTracker.csv'
+param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/FCNN_HyperParamLog.csv'
 
 trainY = torch.tensor(trainY.iloc[:, 1].values)
 testY = torch.tensor(testY.iloc[:, 1].values)
@@ -147,6 +147,8 @@ def tuneModelParmas(trainX,trainY,params_dict):
             "batch_size" : batch_size,
             "num_epochs" : num_epochs,
             'epoch_acc': epoch_results,
+            'decay': decay,
+            'dropout': dropout,
             "acc" : acc,
             "std" : std,
             "time" : time,
