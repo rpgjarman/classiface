@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
+import time
 
 trainX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainX.pt')
 testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testX.pt')
@@ -17,8 +18,8 @@ testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/P
 trainY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/trainY.csv')
 testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/Datasets/ProcessedData/testY.csv')
 
-trainY = torch.tensor(trainY.iloc[:, 1].values)
-testY = torch.tensor(testY.iloc[:, 1].values)
+trainY = torch.tensor(trainY.iloc[:, 2].values)
+testY = torch.tensor(testY.iloc[:, 2].values)
 
 
 print(trainX.shape)
@@ -37,16 +38,19 @@ num_classes = len(torch.unique(trainY))
 batch_size = 64
 learning_rate = 1e-3
 num_epochs = 10
+dropout = 0.2
 
 # Define Model
 class FCNN(nn.Module):
-    def __init__(self, input_dim, hidden1, hidden2, num_classes):
+    def __init__(self, input_dim, hidden1, hidden2, num_classes, p=dropout):
         super(FCNN, self).__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden1),
             nn.ReLU(),
+            nn.Dropout(p),
             nn.Linear(hidden1, hidden2),
             nn.ReLU(),
+            nn.Dropout(p),
             nn.Linear(hidden2, num_classes)
         )
 
@@ -67,9 +71,12 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
 # Loss Evaluator and Optimiser
 criterion = nn.CrossEntropyLoss()
+# optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train
+start = time.time()
+
 for epoch in range(num_epochs):
     model.train()
     total_loss = 0
@@ -103,6 +110,8 @@ for epoch in range(num_epochs):
     avg_loss = total_loss / len(train_loader)
     print(f"[Epoch {epoch+1}] ✅ Average Loss: {avg_loss:.4f} | Train Accuracy: {epoch_acc:.4f}")
 
+timeElapsed = time.time() - start
+print(f"Total Training Time: {timeElapsed}")
 
 # Test Accuracy Evaluation
 model.eval()

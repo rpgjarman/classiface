@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 
 from DatasetLoadMethods import *
-from PreprocessingMethods import *
+from PreprocessingM import *
 
 # Wiki Set:
 if True:
@@ -12,6 +12,7 @@ if True:
     data_path = '/Users/damienlo/Desktop/University/CS 334/Project/Datasets/Wiki/WikiData'
     meta_path = '/Users/damienlo/Desktop/University/CS 334/Project/Datasets/Wiki/wiki.mat'
     struct_key = 'wiki'
+    temp = '/Users/damienlo/Desktop/'
 
 
     # Handling Meta Data
@@ -38,7 +39,7 @@ if True:
     print(stacked_img_tensor.size())
 
     print("Saving tensor to file and rewriting metacsv")
-    saveTensor(stacked_img_tensor, data_path)
+    saveTensor(stacked_img_tensor, temp)
     meta_csv_df.to_csv(meta_csv_path, index=False)
     print("Tensor Saved")
 

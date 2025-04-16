@@ -2,7 +2,7 @@ import pandas as pd
 import pickle
 
 from DatasetLoadMethods import *
-from PreprocessingMethods import *
+from PreprocessingM import *
 
 set_path = '/Users/damienlo/Desktop/University/CS 334/Project/Datasets/Wiki'
 data_path = '/Users/damienlo/Desktop/University/CS 334/Project/Datasets/Wiki/WikiData'
