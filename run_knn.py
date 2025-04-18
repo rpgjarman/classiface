@@ -1,31 +1,43 @@
-from src.load_data import load_csv_data
-from src.split_and_scale import split_data
+import pandas as pd
+import numpy as np
 from src.knn import Knn, mean_absolute_error, r_squared
-from joblib import dump
+from src.DataImportMethods import runAllMetaImports, getMetaDF, load_image_data
+from src.DataSplitMethods import splitData
 
-# 1. Load CSV
-csv_path = "data/wiki_faces.csv"
-x, y = load_csv_data(csv_path, target="age")
+# === File Paths ===
+meta_path = "data/wiki/wiki.mat"
+image_dir = "data/wiki/wiki_crop"
+meta_csv_path = "data/wiki/meta.csv"
+struct_key = "wiki"
 
-# 2. Train/Test Split + Standard Scaling
-xTrain, xTest, yTrain, yTest = split_data(x, y)
+xTrain_path = "data/wiki/xTrain.csv"
+yTrain_path = "data/wiki/yTrain.csv"
+xTest_path = "data/wiki/xTest.csv"
+yTest_path = "data/wiki/yTest.csv"
 
-# 3. Train kNN
-# Main hyperparameter
+# === Step 1: Convert .mat to .csv ===
+runAllMetaImports(image_dir, meta_path, struct_key, meta_csv_path)
+df = getMetaDF(meta_csv_path)
+
+# === Step 2: Load images as NumPy array and align metadata ===
+x_data, y_data = load_image_data(df, image_dir)
+df = df.iloc[:len(x_data)].copy()
+
+# === Step 3: Split and save ===
+splitData(df, x_data, 0.8, xTrain_path, yTrain_path, xTest_path, yTest_path)
+
+# === Step 4: Load the split data ===
+xTrain = pd.read_csv(xTrain_path).to_numpy()
+yTrain = pd.read_csv(yTrain_path).to_numpy().flatten()
+xTest = pd.read_csv(xTest_path).to_numpy()
+yTest = pd.read_csv(yTest_path).to_numpy().flatten()
+
+# === Step 5: Train and evaluate kNN ===
 knn = Knn(k=5)
 knn.train(xTrain, yTrain)
-
-# 4. Predict
 yHat = knn.predict(xTest)
-
-# 5. Evaluation
-mae = mean_absolute_error(yHat, yTest)
-r2 = r_squared(yHat, yTest)
 
 print("Evaluation Metrics:")
 print("-------------------")
-print(f"MAE:  {mae:.2f} years")
-print(f"R^2:  {r2:.3f}")
-
-# 6. Save Model
-dump(knn, "models/knn_model.pkl")
+print(f"MAE: {mean_absolute_error(yHat, yTest):.2f} years")
+print(f"R^2: {r_squared(yHat, yTest):.3f}")
