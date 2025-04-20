@@ -16,7 +16,7 @@ def load_wiki_data(mat_path, image_dir, max_samples=None):
     face_score = wiki['face_score'][0]
     second_face_score = wiki['second_face_score'][0]
 
-    age = photo_taken - (dob / 365.25 + 1969)  # matlab serial to age estimate
+    age = photo_taken - (dob / 365.25)  # matlab serial to age estimate
 
     # Filter: good face score, no second face
     valid = (face_score > 0.0) & np.isnan(second_face_score) & ~np.isnan(gender)

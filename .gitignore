@@ -1,7 +1,5 @@
 __pycache__/
 *.pyc
-*.tar
-*.mat
-*.zip
-data/
-models/
+.env
+/wiki_crop/meta.csv
+/wiki_crop/*.csv
