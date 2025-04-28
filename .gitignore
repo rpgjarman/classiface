@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .env
+wiki/
+wiki_crop/
 /wiki_crop/meta.csv
 /wiki_crop/*.csv
-wiki_crop/
