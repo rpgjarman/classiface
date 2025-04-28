@@ -6,16 +6,16 @@ from src.DataImportMethods import runAllMetaImports, getMetaDF, load_image_data
 from sklearn.model_selection import train_test_split
 
 # Paths
-meta_path = "./wiki_crop/wiki.mat"
-image_dir = "./wiki_crop"
-meta_csv_path = "./wiki_crop/meta.csv"
+meta_path = "./wiki/wiki_crop/wiki.mat"
+image_dir = "./wiki/wiki_crop"
+meta_csv_path = "./wiki/wiki_crop/meta.csv"
 struct_key = "wiki"
 
 # Output CSVs
-xTrain_path = "./wiki_crop/xTrain.csv"
-yTrain_path = "./wiki_crop/yTrain.csv"
-xTest_path = "./wiki_crop/xTest.csv"
-yTest_path = "./wiki_crop/yTest.csv"
+xTrain_path = "./wiki/wiki_crop/xTrain.csv"
+yTrain_path = "./wiki/wiki_crop/yTrain.csv"
+xTest_path = "./wiki/wiki_crop/xTest.csv"
+yTest_path = "./wiki/wiki_crop/yTest.csv"
 
 # 1. Import metadata and convert .mat to .csv if needed
 runAllMetaImports(image_dir, meta_path, struct_key, meta_csv_path)
