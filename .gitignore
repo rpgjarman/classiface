@@ -3,3 +3,4 @@ __pycache__/
 .env
 /wiki_crop/meta.csv
 /wiki_crop/*.csv
+wiki_crop/
