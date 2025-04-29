@@ -1,114 +1,123 @@
 from Models.ResNetFCNN import ResNetFCNN
-import torch.nn as nn
-import torch
-import pandas as pd
-from torch.utils.data import DataLoader, TensorDataset
-import torch.optim as optim
-from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve, average_precision_score,f1_score
-import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import roc_auc_score, roc_curve
+import time
 
 
-param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/RES_HyperParamLog.csv'
-
-
-trainX1 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX1.pt')
-trainX2 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX2.pt')
-trainX3 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX3.pt')
-trainX4 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX4.pt')
+# trainX1 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX0.pt')
+# trainX2 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX1.pt')
+# trainX3 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX2.pt')
+# trainX4 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX3.pt')
 testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testX.pt')
 
-trainY1 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY1.csv').iloc[:, 1].values)
-trainY2 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY2.csv').iloc[:, 1].values)
-trainY3 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY3.csv').iloc[:, 1].values)
-trainY4 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY4.csv').iloc[:, 1].values)
+trainY1 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY0.csv')
+trainY2 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY1.csv')
+trainY3 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY2.csv')
+trainY4 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY3.csv')
 
-testY = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testY.csv').iloc[:, 2].values)
+testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testY.csv')
 
-trainX_list = [trainX1, trainX2, trainX3, trainX4]
+
+
+
+
+
+hidden_dim1=128
+hidden_dim2= 32
+num_classes = 0
+batch_size= 128
+lr =0.001
+num_epochs=10
+dropout= 0.1
+decay=1e-06
+classification = True
+criterion = nn.CrossEntropyLoss()
+
+
+params = {"lr" : lr,
+            "h1" : hidden_dim1,
+            "h2" : hidden_dim2,
+            "batch_size" : batch_size,
+            "num_epochs" : num_epochs,
+            'decay': decay,
+            'dropout': dropout,}
+
+
+
+
+
+test = input("Test: gender/age ")
+
+if test == "gender":
+    print("Test Gender")
+    trainY1 = torch.tensor(trainY1.iloc[:, 1].values)
+    trainY2 = torch.tensor(trainY2.iloc[:, 1].values)
+    trainY3 = torch.tensor(trainY3.iloc[:, 1].values)
+    trainY4 = torch.tensor(trainY4.iloc[:, 1].values)
+    testY = torch.tensor(testY.iloc[:, 1].values)
+    classification = True
+    criterion = nn.CrossEntropyLoss()
+elif test == "age":
+    print("Test Age")
+    trainY1 = torch.tensor(trainY1.iloc[:, 2].values)
+    trainY2 = torch.tensor(trainY2.iloc[:, 2].values)
+    trainY3 = torch.tensor(trainY3.iloc[:, 2].values)
+    trainY4 = torch.tensor(trainY4.iloc[:, 2].values)
+    testY = torch.tensor(testY.iloc[:, 2].values)
+    classification = False
+    criterion = nn.MSELoss()
+else:
+    print("Not a valid choice")
+
 trainY_list = [trainY1, trainY2, trainY3, trainY4]
 
 all_trainY = torch.cat(trainY_list)
 
-
-
-# Hyperparameters
-lr = 1
-hidden_dim1 = 1
-hidden_dim2 = 1
-batch_size = 1
-dropout = 1
-decay = 1
-num_epochs = 1
 num_classes = len(torch.unique(all_trainY))
 
+print(f"Testing: {params}")
 
 
-train_loader_list = []
-for i in range(len(trainX_list)):
-    trainX = trainX_list[i]
-    train_dataset = TensorDataset(trainX_list[i], trainY_list[i])
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-#Training
-model = ResNetFCNN(hidden_dim1, hidden_dim2, num_classes, dropout)
+# Loading Data
+model = ResNetFCNN(hidden_dim1, hidden_dim2, num_classes, dropout, classification=classification)
 optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=decay)
-criterion = nn.CrossEntropyLoss()
+for i in range(0,4):
+    path = (f'/Users/damienlo/Desktop/University/CS 334/'
+            f'Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX{i}.pt')
+    trainX = torch.load(path)
+    train_dataset = TensorDataset(trainX, trainY_list[i])
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    print(f"Training on dataset {i+1}/4")
+    model.train_model(train_loader, criterion, optimizer, num_epochs)
 
-print(f'BEGINING TRANING')
-model.train_model(train_loader_list, criterion, optimizer, num_epochs)
-print('ENDING TRANING')
-
-
-print('BEGINING TEST EVALUATION')
 test_dataset = TensorDataset(testX, testY)
-test_loader = DataLoader(test_dataset, batch_size=batch_size)
-probs, labels = model.predict_proba_for_auc(test_loader)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-probs = np.array(probs)
-labels = np.array(labels)
 
-pred_labels = np.argmax(probs, axis=1)
+if test == "gender":
+    roc = {"fpr": [], "tpr": []}
+    eval = model.evaluate_model(test_loader)
+    all_preds, all_labels = model.predict_outputs(test_loader)
+    yHat = (np.array(all_preds) >= 0.5).astype(int)
 
-# AUC
-auc_macro = roc_auc_score(labels, probs, multi_class='ovr', average='macro')
-auc_weighted = roc_auc_score(labels, probs, multi_class='ovr', average='weighted')
+    auc = roc_auc_score(all_labels, all_preds)
+    roc['fpr'], roc['tpr'], _ = roc_curve(all_labels, all_preds)
 
-print(f"ROC AUC (macro): {auc_macro:.4f}")
-print(f"ROC AUC (weighted): {auc_weighted:.4f}")
+    print(f'AUC: {auc}')
+    print(f"ROC Values: {roc}")
 
-#AUPRC
-precision, recall, thresholds = precision_recall_curve(labels, probs)
-auprc = average_precision_score(labels, probs)
+    txt = (f'/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ResNetFCNN_roc.csv')
 
-print(f"AUPRC: {auprc:.4f}")
+    roc_df = pd.DataFrame(roc, columns=['fpr', 'tpr'])
+    roc_df.to_csv(txt, index=False)
 
-#F1
-f1_macro = f1_score(labels, pred_labels, average='macro')
-f1_weighted = f1_score(labels, pred_labels, average='weighted')
+    print(f'ACC: {eval}')
 
-print(f"F1 Score (macro): {f1_macro:.4f}")
-print(f"F1 Score (weighted): {f1_weighted:.4f}")
-
-num_classes = probs.shape[1]
-
-# Binarize the true labels (one-hot)
-labels_bin = label_binarize(labels, classes=np.arange(num_classes))
-
-# AUPRC per class
-auprc_per_class = []
-plt.figure(figsize=(10, 6))
-for c in range(num_classes):
-    precision, recall, _ = precision_recall_curve(labels_bin[:, c], probs[:, c])
-    ap = average_precision_score(labels_bin[:, c], probs[:, c])
-    auprc_per_class.append(ap)
-
-    plt.plot(recall, precision, label=f'Class {c} (AP = {ap:.2f})')
-
-plt.xlabel("Recall")
-plt.ylabel("Precision")
-plt.title("Precision-Recall Curve (per class)")
-plt.legend()
-plt.grid()
-plt.tight_layout()
-plt.show()
+if test == "age":
+    eval = model.evaluate_model(test_loader)
+    print(f'MSE: {eval}')

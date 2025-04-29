@@ -11,26 +11,54 @@ import torch.optim as optim
 import random
 
 
-param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/RES_HyperParamLog.csv'
+param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/RES_HyperParamLog_Gen.csv'
 
 
-trainX1 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX1.pt')
-trainX2 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX2.pt')
-trainX3 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX3.pt')
-trainX4 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX4.pt')
+# trainX1 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX1.pt')
+# trainX2 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX2.pt')
+# trainX3 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX3.pt')
+# trainX4 = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX4.pt')
 testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testX.pt')
 
-trainY1 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY1.csv').iloc[:, 1].values)
-trainY2 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY2.csv').iloc[:, 1].values)
-trainY3 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY3.csv').iloc[:, 1].values)
-trainY4 = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY4.csv').iloc[:, 1].values)
+trainY1 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY0.csv')
+trainY2 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY1.csv')
+trainY3 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY2.csv')
+trainY4 = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainY3.csv')
 
-testY = torch.tensor(pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testY.csv').iloc[:, 2].values)
+testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_testY.csv')
 
-trainX_list = [trainX1, trainX2, trainX3, trainX4]
+
+test = input("Test: gender/age: ")
+classification = True
+
+if test == "gender":
+    trainY1 = torch.tensor(trainY1.iloc[:, 1].values)
+    trainY2 = torch.tensor(trainY2.iloc[:, 1].values)
+    trainY3 = torch.tensor(trainY3.iloc[:, 1].values)
+    trainY4 = torch.tensor(trainY4.iloc[:, 1].values)
+    testY = torch.tensor(testY.iloc[:, 1].values)
+    classification = True
+    criterion = nn.CrossEntropyLoss()
+    param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/RES_HyperParamLog_Gen.csv'
+elif test == "age":
+    trainY1 = torch.tensor(trainY1.iloc[:, 2].values)
+    trainY2 = torch.tensor(trainY2.iloc[:, 2].values)
+    trainY3 = torch.tensor(trainY3.iloc[:, 2].values)
+    trainY4 = torch.tensor(trainY4.iloc[:, 2].values)
+    testY = torch.tensor(testY.iloc[:, 2].values)
+    classification = False
+    criterion = nn.MSELoss()
+    param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/RES_HyperParamLog_Age.csv'
+else:
+    print("Not a valid choice")
+
+
+
 trainY_list = [trainY1, trainY2, trainY3, trainY4]
 
 all_trainY = torch.cat(trainY_list)
+
+num_classes = len(torch.unique(all_trainY))
 
 folds = 5
 
@@ -52,7 +80,7 @@ params_dict = {
 '''
 
 
-def performKFoldValidation(trainX_list, trainY_list, hidden_dim1, hidden_dim2, batch_size, learning_rate, num_epochs,
+def performKFoldValidation(num_train_sets, trainY_list, hidden_dim1, hidden_dim2, batch_size, learning_rate, num_epochs,
                            dropout, decay):
     # Hyperparameters
     all_trainY = torch.cat(trainY_list)
@@ -61,33 +89,34 @@ def performKFoldValidation(trainX_list, trainY_list, hidden_dim1, hidden_dim2, b
     total_acc = []
     total_time = []
 
-    for i in range(len(trainX_list)):
-        train_loader_list = []
-
+    # Set one of the list sets as validation
+    for i in range(num_train_sets):
         print(f'Performing kfold validation on validation set {i}')
 
-        for j in range(len(trainX_list)):
-            if i==j: break
-            train_dataset = TensorDataset(trainX_list[j], trainY_list[j])
-            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-            train_loader_list.append(train_loader)
+        model = ResNetFCNN(hidden_dim1, hidden_dim2, num_classes, dropout, classification)
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=decay)
 
-        X_val_fold = trainX_list[i]
+        # Define Validation Set
+        val_path = f'/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX{i}.pt'
+        X_val_fold = torch.load(val_path)
         Y_val_fold = trainY_list[i]
         val_dataset = TensorDataset(X_val_fold, Y_val_fold)
         val_loader = DataLoader(val_dataset, batch_size=batch_size)
 
-
-        model = ResNetFCNN(hidden_dim1, hidden_dim2, num_classes, dropout)
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=decay)
-        criterion = nn.CrossEntropyLoss()
-
+        # Train on Remaining Train Sets
         start = time.time()
-        model.train_model(train_loader_list, criterion, optimizer, num_epochs)
 
-        total_acc.append(model.evaluate_model(val_loader))
-        total_time.append(time.time() - start)
+        #Loading and Training Dataset
+        for j in range(num_train_sets):
+            if i==j: continue
+            print(f"Training on training set {j}/{num_train_sets-1}")
+            train_set = torch.load(f'/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/ResNetFCNN/ProcessedData/RES_trainX{j}.pt')
+            train_dataset = TensorDataset(train_set, trainY_list[j])
+            train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+            model.train_model(train_loader, criterion, optimizer, num_epochs)
 
+        # Validate of rermaining train list
+        # FOr each fold, evaluate on validation set and send the epochs to results to list
         total_acc.append(model.evaluate_model(val_loader))
         total_time.append(time.time() - start)
 
@@ -102,7 +131,7 @@ def performKFoldValidation(trainX_list, trainY_list, hidden_dim1, hidden_dim2, b
 '''
 
 
-def tuneModelParmas(trainX_list, trainY_list, params_dict):
+def tuneModelParmas(num_train_sets, trainY_list, params_dict):
     print("BEGINING PARAMETER TUNING")
     keys = list(params_dict.keys())
     values = list(params_dict.values())
@@ -129,10 +158,8 @@ def tuneModelParmas(trainX_list, trainY_list, params_dict):
         dropout = param_combo['dropout']
         decay = param_combo['decay']
 
-        acc, std, time = performKFoldValidation(trainX_list, trainY_list, h1, h2, batch_size, lr, num_epochs,
+        acc, std, time = performKFoldValidation(num_train_sets, trainY_list, h1, h2, batch_size, lr, num_epochs,
                                                                dropout, decay)
-
-        epoch_results = str(epoch_results)
 
         combo_result = {
             'params': param_combo,
@@ -149,9 +176,8 @@ def tuneModelParmas(trainX_list, trainY_list, params_dict):
             "h2": h2,
             "batch_size": batch_size,
             "num_epochs": num_epochs,
-            'epoch_acc': epoch_results,
-            'dropout': dropout,
             'decay': decay,
+            'dropout': dropout,
             "acc": acc,
             "std": std,
             "time": time,
@@ -170,13 +196,13 @@ def tuneModelParmas(trainX_list, trainY_list, params_dict):
     # Filter all models within 1 SD of the best
     threshold_models = [r for r in results if r['acc'] >= threshold]
 
-    simple = min(threshold_models, key=lambda r: r['complexity'])
+    simple = min(threshold_models, key=lambda  r: r['complexity'])
 
     return best_model, simple
 
 
-print("TEST")
-best_model, simple_model = tuneModelParmas(trainX_list, trainY_list, params_dict)
+
+best_model, simple_model = tuneModelParmas(4, trainY_list, params_dict)
 
 print(f"Best Model: {best_model}")
 print(f"Simple Model: {simple_model}")

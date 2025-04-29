@@ -19,10 +19,21 @@ testX = torch.load('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFi
 trainY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_trainY.csv')
 testY = pd.read_csv('/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/ProcessedData/FCNN_testY.csv')
 
-param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/FCNN_HyperParamLog.csv'
+param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/FCNN_HyperParamLog_Gen.csv'
 
-trainY = torch.tensor(trainY.iloc[:, 1].values)
-testY = torch.tensor(testY.iloc[:, 1].values)
+classification = False
+criterion = nn.CrossEntropyLoss()
+
+if classification:
+    trainY = torch.tensor(trainY.iloc[:, 1].values)
+    testY = torch.tensor(testY.iloc[:, 1].values)
+    criterion = nn.CrossEntropyLoss()
+    param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/FCNN_HyperParamLog_Gen.csv'
+else:
+    trainY = torch.tensor(trainY.iloc[:, 2].values)
+    testY = torch.tensor(testY.iloc[:, 2].values)
+    criterion = nn.MSELoss()
+    param_tracker = '/Users/damienlo/Desktop/University/CS 334/Project/ModelRunFiles/FCNN/FCNN_HyperParamLog_Age.csv'
 
 folds = 5
 
@@ -78,19 +89,18 @@ def performKFoldValidation(trainX, trainY, k_fold, hidden_dim1, hidden_dim2, bat
         val_loader = DataLoader(val_dataset, batch_size=batch_size)
 
         # Defining Model
-        model = FCNN(input_dim, hidden_dim1, hidden_dim2, num_classes, dropout)
+        model = FCNN(input_dim, hidden_dim1, hidden_dim2, num_classes, dropout, classification)
         optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=decay)
-        criterion = nn.CrossEntropyLoss()
 
         # Training Model And Testing On Fold
         start = time.time()
-        epoch_results = model.train_model(train_loader,criterion,optimizer,num_epochs)
+        model.train_model(train_loader,criterion,optimizer,num_epochs)
 
         # Logging Average Metrics
         total_acc.append(model.evaluate_model(val_loader))
         total_time.append(time.time() - start)
 
-    return epoch_results, mean(total_acc), stats.sem(total_acc), mean(total_time)
+    return mean(total_acc), stats.sem(total_acc), mean(total_time)
 
 '''
     tuneModelParams
@@ -126,13 +136,10 @@ def tuneModelParmas(trainX,trainY,params_dict):
         dropout = param_combo['dropout']
         decay = param_combo['decay']
 
-        epoch_results, acc, std, time = performKFoldValidation(trainX, trainY, 5, h1, h2, batch_size, lr, num_epochs, dropout, decay)
-
-        epoch_results = str(epoch_results)
+        acc, std, time = performKFoldValidation(trainX, trainY, 5, h1, h2, batch_size, lr, num_epochs, dropout, decay)
 
         combo_result = {
             'params': param_combo,
-            'epoch_acc': epoch_results,
             'acc': acc,
             'std': std,
             'time': time,
@@ -146,14 +153,13 @@ def tuneModelParmas(trainX,trainY,params_dict):
             "h2" : h2,
             "batch_size" : batch_size,
             "num_epochs" : num_epochs,
-            'epoch_acc': epoch_results,
             'decay': decay,
             'dropout': dropout,
             "acc" : acc,
             "std" : std,
             "time" : time,
             "complexity" : h1 + h2,
-        }]).to_csv(param_tracker, mode='a', index=False, header=False)
+        }]).to_csv(param_tracker,  mode='a', index=False, header=False)
 
 
 

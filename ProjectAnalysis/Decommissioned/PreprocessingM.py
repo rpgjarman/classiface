@@ -53,7 +53,6 @@ def importImageData(data_path, meta_data_df):
 
         # Crop Image
         img_tensor = cropFace(img_tensor, row['face_location'])
-
         # Resize Image to 128 by 128
         resize_transform = transforms.Compose([
             transforms.ToPILImage(),
