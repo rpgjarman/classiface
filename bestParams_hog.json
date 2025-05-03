@@ -1,0 +1,1 @@
+{"LR (None)": {"Grid": {"max_iter": 100, "penalty": null, "solver": "lbfgs"}}, "NN": {"Grid": {"activation": "relu", "alpha": 0.01, "batch_size": 64, "early_stopping": true, "hidden_layer_sizes": [100], "max_iter": 100, "solver": "adam"}}, "KNN": {"Grid": {"metric": "euclidean", "n_neighbors": 8}}}
